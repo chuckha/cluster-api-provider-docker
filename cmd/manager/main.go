@@ -23,11 +23,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/klog/klogr"
 	"sigs.k8s.io/cluster-api-provider-docker/api/v1alpha1"
 	infrastructurev1alpha2 "sigs.k8s.io/cluster-api-provider-docker/api/v1alpha2"
 	"sigs.k8s.io/cluster-api-provider-docker/controllers"
+	"sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha2"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -40,6 +41,7 @@ func init() {
 	_ = scheme.AddToScheme(myscheme)
 	_ = v1alpha1.AddToScheme(myscheme)
 	_ = infrastructurev1alpha2.AddToScheme(myscheme)
+	_ = v1alpha2.AddToScheme(myscheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -51,8 +53,7 @@ func main() {
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
 
-	ctrl.SetLogger(klogr.New())
-
+	ctrl.SetLogger(zap.Logger(true))
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             myscheme,
 		MetricsBindAddress: metricsAddr,

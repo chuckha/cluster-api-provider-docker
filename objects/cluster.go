@@ -17,6 +17,7 @@ limitations under the License.
 package objects
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1alpha2 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha2"
 )
@@ -32,7 +33,7 @@ func GetMachineDeployment(name, namespace, clusterName, kubeletVersion string, r
 	return clusterv1alpha2.MachineDeployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "MachineDeployment",
-			APIVersion: "cluster.k8s.io/v1alpha1",
+			APIVersion: "cluster.x-k8s.io/v1alpha2",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -61,7 +62,7 @@ func GetCluster(clusterName, namespace string) clusterv1alpha2.Cluster {
 	return clusterv1alpha2.Cluster{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Cluster",
-			APIVersion: "cluster.k8s.io/v1alpha1",
+			APIVersion: "cluster.x-k8s.io/v1alpha2",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
@@ -86,25 +87,33 @@ func GetMachine(name, namespace, clusterName, set, version string) clusterv1alph
 	machine := clusterv1alpha2.Machine{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Machine",
-			APIVersion: "cluster.k8s.io/v1alpha1",
+			APIVersion: "cluster.x-k8s.io/v1alpha2",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"cluster.k8s.io/cluster-name": clusterName,
-				"set":                         set,
+				"cluster.x-k8s.io/cluster-name": clusterName,
+				"set":                           set,
 			},
 		},
 		Spec: clusterv1alpha2.MachineSpec{
-			// TODO
+			Version: &version,
+			Bootstrap: clusterv1alpha2.Bootstrap{
+				ConfigRef: &v1.ObjectReference{
+					Kind:       "KubeadmConfig",
+					Namespace:  namespace,
+					Name:       "test-config", //TODO
+					APIVersion: "bootstrap.cluster.x-k8s.io/v1alpha1",
+				},
+			},
+			InfrastructureRef: v1.ObjectReference{
+				Kind:       "DockerMachine",
+				Namespace:  namespace,
+				Name:       "test-machine",
+				APIVersion: "infrastructure.cluster.x-k8s.io/v1alpha1",
+			},
 		},
-	}
-	if set == controlPlaneSet {
-		*machine.Spec.Version = version
-	}
-	if set == "worker" {
-		*machine.Spec.Version = version
 	}
 
 	return machine

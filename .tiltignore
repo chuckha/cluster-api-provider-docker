@@ -1,0 +1,8 @@
+**/.idea
+.idea
+/Users/cha/go/src/sigs.k8s.io/cluster-api/.idea/
+/Users/cha/dev/cluster-api-bootstrap-provider-kubeadm/.idea/
+**/*.*___jb_old___
+**/*.*___jb_tmp___
+
+*.yaml

@@ -13,23 +13,10 @@
 # limitations under the License.
 
 FROM golang:1.12.7
-WORKDIR /cluster-api-provider-docker
-RUN  curl -L https://dl.k8s.io/v1.14.3/kubernetes-client-linux-amd64.tar.gz | tar xvz
+WORKDIR /tmp
+RUN curl -L https://dl.k8s.io/v1.14.4/kubernetes-client-linux-amd64.tar.gz | tar xvz
+RUN mv /tmp/kubernetes/client/bin/kubectl /usr/local/bin
 RUN curl https://get.docker.com | sh
-ADD go.mod .
-ADD go.sum .
-RUN go mod download
-ADD cmd cmd
-ADD api api
-ADD actuators actuators
-ADD controllers controllers
-ADD kind kind
-ADD third_party third_party
+COPY manager /
 
-RUN go install -v ./cmd/manager
-
-FROM golang:1.12.7
-COPY --from=0 /cluster-api-provider-docker/kubernetes/client/bin/kubectl /usr/local/bin
-COPY --from=0 /usr/bin/docker /usr/local/bin
-COPY --from=0 /go/bin/manager /
 ENTRYPOINT ["manager"]
