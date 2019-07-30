@@ -1,5 +1,8 @@
 project = str(local('gcloud config get-value project')).strip()
 
+# let's go~~~~
+enable_feature("team_alerts")
+
 read_file(str(local('which capdctl')).rstrip('\n'))
 k8s_yaml(local('capdctl platform -capi-image gcr.io/kubernetes1-226021/cluster-api-controller-amd64:dev -bp-image gcr.io/kubernetes1-226021/cluster-api-bootstrap-provider-kubeadm:dev -bp-ref master'))
 
