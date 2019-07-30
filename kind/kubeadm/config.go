@@ -81,7 +81,12 @@ func InitConfiguration(version, name, controlPlaneEndpoint string, additionalCer
 	}
 
 	// Apply additional cert SANs
-	clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, additionalCertSANS...)
+	for _, san := range additionalCertSANS {
+		if san == "" {
+			continue
+		}
+		clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, san)
+	}
 
 	kubeletConfiguration := &config.KubeletConfiguration{
 		TypeMeta: metav1.TypeMeta{
