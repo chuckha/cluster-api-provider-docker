@@ -120,7 +120,7 @@ func ConfigureLoadBalancer(clusterName string) error {
 }
 
 // KubeadmConfig writes the kubeadm config to a node
-func KubeadmConfig(node *nodes.Node, clusterName, lbip string) error {
+func KubeadmConfig(node *nodes.Node, clusterName, lbip string, additionalCertSANs ...string) error {
 	// get installed kubernetes version from the node image
 	kubeVersion, err := node.KubeVersion()
 	if err != nil {
@@ -128,7 +128,7 @@ func KubeadmConfig(node *nodes.Node, clusterName, lbip string) error {
 	}
 
 	kubeadmConfig, err := kubeadm.InitConfiguration(kubeVersion, clusterName,
-		fmt.Sprintf("%s:%d", lbip, constkind.APIServerPort))
+		fmt.Sprintf("%s:%d", lbip, constkind.APIServerPort), additionalCertSANs...)
 
 	if err != nil {
 		return errors.Wrap(err, "failed to generate kubeadm config content")

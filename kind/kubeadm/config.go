@@ -38,7 +38,7 @@ const (
 
 // InitConfiguration accepts a set of paramenters like Kubernetes version and cluster name,
 // and marshals the kubeadm configuration types in a `---` separated JSON document.
-func InitConfiguration(version, name, controlPlaneEndpoint string) ([]byte, error) {
+func InitConfiguration(version, name, controlPlaneEndpoint string, additionalCertSANS ...string) ([]byte, error) {
 	configuration := &kubeadmv1beta1.InitConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "InitConfiguration",
@@ -79,6 +79,10 @@ func InitConfiguration(version, name, controlPlaneEndpoint string) ([]byte, erro
 			PodSubnet: "10.244.0.0/16",
 		},
 	}
+
+	// Apply additional cert SANs
+	clusterConfiguration.APIServer.CertSANs = append(clusterConfiguration.APIServer.CertSANs, additionalCertSANS...)
+
 	kubeletConfiguration := &config.KubeletConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "KubeletConfiguration",

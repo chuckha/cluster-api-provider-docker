@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -132,7 +133,22 @@ func CreateControlPlane(clusterName, machineName, lbip, version string, mounts [
 		return nil, err
 	}
 	fmt.Println("Configuring kubeadm")
-	if err := KubeadmConfig(controlPlaneNode, clusterName, lbip); err != nil {
+
+	// see if there is a cloud metadata server
+	r, err := http.Get("http://169.254.169.254/latest/meta-data/public-ipv4")
+	cloudIP := ""
+	// ignore the response if the error is not nil
+	if err == nil {
+		contents, err := ioutil.ReadAll(r.Body)
+		// ignore contents if err is nil
+		if err == nil {
+			cloudIP = string(contents)
+		}
+		// ignore body close error
+		r.Body.Close()
+	}
+
+	if err := KubeadmConfig(controlPlaneNode, clusterName, lbip, cloudIP); err != nil {
 		return nil, err
 	}
 	fmt.Println("Initializing cluster")
