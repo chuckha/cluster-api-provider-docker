@@ -34,13 +34,6 @@ spec:
             name: dockersock
           - mountPath: /var/lib/docker
             name: dockerlib
-        resources:
-          limits:
-            cpu: 100m
-            memory: 30Mi
-          requests:
-            cpu: 100m
-            memory: 20Mi
         securityContext:
           privileged: true
       terminationGracePeriodSeconds: 10

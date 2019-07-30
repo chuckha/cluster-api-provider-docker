@@ -6,3 +6,5 @@
 **/*.*___jb_tmp___
 
 *.yaml
+*.go.*
+CONTRIBUTING.md

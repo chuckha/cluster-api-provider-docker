@@ -10,5 +10,6 @@ docker_build('gcr.io/' + project +'/manager', '.', live_update=[
     # todo we probably want more than just controllers here
     sync('./controllers', '/home/ubuntu/cluster-api-provider-docker/controllers'),
     # TODO: add a run() and redeploy when manifests change? make manifests => reapply rbac?
-    restart_container(),
+    # for containerd
+    run('/restart.sh'),
 ])
