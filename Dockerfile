@@ -25,13 +25,9 @@ ADD actuators actuators
 ADD controllers controllers
 ADD kind kind
 ADD third_party third_party
-
-RUN go install -v ./cmd/manager
-
-FROM golang:1.12.7
-COPY --from=0 /cluster-api-provider-docker/kubernetes/client/bin/kubectl /usr/local/bin
-COPY --from=0 /usr/bin/docker /usr/local/bin
-COPY --from=0 /go/bin/manager /
 COPY third_party/forked/rerun-process-wrapper/start.sh /start.sh
 COPY third_party/forked/rerun-process-wrapper/restart.sh /restart.sh
-ENTRYPOINT ["/start.sh", "manager"]
+
+RUN go install -v ./cmd/manager
+RUN mv /go/bin/manager /manager
+ENTRYPOINT ["/start.sh", "/manager"]

@@ -7,6 +7,15 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - cluster.x-k8s.io
+  resources:
+  - clusters
+  - machines
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
   - dockermachines
@@ -26,14 +35,3 @@ rules:
   - get
   - patch
   - update
-- apiGroups:
-  - cluster.x-k8s.io
-  resources:
-  - clusters
-  - clusters/status
-  - machines
-  - machines/status
-  verbs:
-  - get
-  - list
-  - watch

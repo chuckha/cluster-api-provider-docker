@@ -68,9 +68,9 @@ func (mo *machineDeploymentOptions) initFlags(fs *flag.FlagSet) {
 }
 
 type platformOptions struct {
-	bootstrapRef, bootstrapImage           string
-	clusterAPIRef, clusterAPIImage         string
-	infrastructureRef, infrastructureImage string
+	bootstrapRef, bootstrapImage, bootstrapCRDPath                string
+	clusterAPIRef, clusterAPIImage, clusterAPICRDPath             string
+	infrastructureRef, infrastructureImage, infrastructureCRDPath string
 }
 
 func gitRefUsage(kind string) string {
@@ -79,20 +79,31 @@ func gitRefUsage(kind string) string {
 func imageUsage(kind string) string {
 	return fmt.Sprintf("A custom image for the %s provider", kind)
 }
+func crdPathUsage(kind string) string {
+	return fmt.Sprintf("Either a local path to the config/default directory or `remote` which will calculate the remote path dynamically %s provider", kind)
+}
 
 func (po *platformOptions) initFlags(fs *flag.FlagSet) {
 	fs.StringVar(&po.bootstrapRef, "bootstrap-provider-ref", "master", gitRefUsage("bootstrap"))
 	fs.StringVar(&po.bootstrapRef, "bp-ref", "master", gitRefUsage("bootstrap")+" (shorthand)")
 	fs.StringVar(&po.bootstrapImage, "bootstrap-provider-image", "", imageUsage("bootstrap"))
 	fs.StringVar(&po.bootstrapImage, "bp-image", "", imageUsage("bootstrap")+" (shorthand)")
+	fs.StringVar(&po.bootstrapCRDPath, "bootstrap-provider-crd-path", "remote", crdPathUsage("bootstrap"))
+	fs.StringVar(&po.bootstrapCRDPath, "bp-crd-path", "remote", crdPathUsage("bootstrap")+" (shorthand)")
+
 	fs.StringVar(&po.clusterAPIRef, "cluster-api-ref", "master", gitRefUsage("Cluster API"))
 	fs.StringVar(&po.clusterAPIRef, "capi-ref", "master", gitRefUsage("Cluster API")+" (shorthand)")
 	fs.StringVar(&po.clusterAPIImage, "cluster-api-image", "", imageUsage("Cluster API"))
 	fs.StringVar(&po.clusterAPIImage, "capi-image", "", imageUsage("Cluster API")+" (shorthand)")
+	fs.StringVar(&po.clusterAPICRDPath, "cluster-api-crd-path", "remote", crdPathUsage("Cluster API"))
+	fs.StringVar(&po.clusterAPICRDPath, "capi-crd-path", "remote", crdPathUsage("Cluster API")+" (shorthand)")
+
 	fs.StringVar(&po.infrastructureRef, "infrastructure-provider-ref", "master", gitRefUsage("infrastructure"))
 	fs.StringVar(&po.infrastructureRef, "ip-ref", "master", gitRefUsage("infrastructure")+" (shorthand)")
 	fs.StringVar(&po.infrastructureImage, "infrastructure-provider-image", "", imageUsage("infrastructure"))
 	fs.StringVar(&po.infrastructureImage, "ip-image", "", imageUsage("infrastructure")+" (shorthand)")
+	fs.StringVar(&po.infrastructureCRDPath, "infrastructure-provider-crd-path", "config/default", crdPathUsage("infrastructure"))
+	fs.StringVar(&po.infrastructureCRDPath, "ip-crd-path", "config/default", crdPathUsage("infrastructure")+" (shorthand)")
 }
 
 func addClusterName(fs *flag.FlagSet) *string {
@@ -153,13 +164,7 @@ func main() {
 		fmt.Printf("to use your new cluster:\nexport KUBECONFIG=%s\n", kindcluster.NewContext(*kindClusterName).KubeConfigPath())
 	case "platform":
 		checkErr(platform.Parse(os.Args[2:]))
-		objs, err := objects.GetManagementCluster(
-			platformOpts.clusterAPIImage,
-			platformOpts.clusterAPIRef,
-			platformOpts.infrastructureImage,
-			platformOpts.infrastructureRef,
-			platformOpts.bootstrapImage,
-			platformOpts.bootstrapRef)
+		objs, err := getProviderObjects(platformOpts)
 		checkErr(err)
 		checkErr(printAll(objs))
 	case "control-plane":
@@ -258,13 +263,42 @@ func makeManagementCluster(clusterName string, options *platformOptions) error {
 	return applyControlPlane(clusterName, options)
 }
 
+func getProviderObjects(options *platformOptions) ([]runtime.Object, error) {
+	providers := []*objects.Provider{
+		{
+			Name:         "cluster-api-provider-docker",
+			Organization: "kubernetes-sigs",
+			CRDPath:      options.infrastructureCRDPath,
+			Version:      options.infrastructureRef,
+			ManagerKind:  "Deployment",
+			CustomImage:  options.infrastructureImage,
+		},
+		{
+			Name:         "cluster-api-bootstrap-provider-kubeadm",
+			Organization: "kubernetes-sigs",
+			CRDPath:      options.bootstrapCRDPath,
+			Version:      options.bootstrapRef,
+			ManagerKind:  "Deployment",
+			CustomImage:  options.bootstrapImage,
+		},
+		{
+			Name:         "cluster-api",
+			Organization: "kubernetes-sigs",
+			CRDPath:      options.clusterAPICRDPath,
+			ManagerKind:  "StatefulSet",
+			CustomImage:  options.clusterAPIImage,
+		},
+	}
+	return objects.GetManagementCluster(providers)
+}
+
 func applyControlPlane(clusterName string, options *platformOptions) error {
 	fmt.Println("Applying the control plane")
 	cfg, err := controlplane.GetKubeconfig(clusterName)
 	if err != nil {
 		return err
 	}
-	objs, err := objects.GetManagementCluster(options.clusterAPIImage, options.clusterAPIRef, options.infrastructureImage, options.infrastructureRef, options.bootstrapImage, options.bootstrapRef)
+	objs, err := getProviderObjects(options)
 	if err != nil {
 		return err
 	}

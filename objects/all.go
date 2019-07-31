@@ -60,7 +60,7 @@ type Provider struct {
 
 // GetCRDPath generates a remote reference for kustomize or returns the provided value
 func (p *Provider) GetCRDPath() string {
-	if p.CRDPath != "" {
+	if p.CRDPath != "remote" {
 		return p.CRDPath
 	}
 	return fmt.Sprintf("https://github.com/%s/%s/config/default?ref=%s", p.Organization, p.Name, p.Version)
@@ -153,38 +153,8 @@ func (p *Provider) GetCRDs() ([]runtime.Object, error) {
 
 // GetManagementCluster returns all the objects needed to create a working management cluster
 // TODO would be nice to put these args into provider-configure-object
-func GetManagementCluster(capiImage, capiRef, ipImage, ipRef, bpImage, bpRef string) ([]runtime.Object, error) {
-	infrastructureDocker := &Provider{
-		Organization: "kubernetes-sigs",
-		Name:         "cluster-api-provider-docker",
-		CRDPath:      "config/default",
-		Version:      ipRef,
-		ManagerKind:  "Deployment",
-		CustomImage:  ipImage,
-	}
-	bootstrap := &Provider{
-		Organization: "kubernetes-sigs",
-		Name:         "cluster-api-bootstrap-provider-kubeadm",
-		Version:      bpRef,
-		ManagerKind:  "Deployment",
-		CustomImage:  bpImage,
-	}
-	capi := &Provider{
-		Organization: "kubernetes-sigs",
-		Name:         "cluster-api",
-		Version:      capiRef,
-		ManagerKind:  "StatefulSet",
-		CustomImage:  capiImage,
-	}
-
-	providers := []*Provider{
-		infrastructureDocker,
-		bootstrap,
-		capi,
-	}
-
+func GetManagementCluster(providers []*Provider) ([]runtime.Object, error) {
 	out := []runtime.Object{}
-
 	for _, provider := range providers {
 		objs, err := provider.GetCRDs()
 		if err != nil {

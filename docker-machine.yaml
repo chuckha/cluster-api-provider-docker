@@ -2,3 +2,43 @@ kind: DockerMachine
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 metadata:
   name: test-machine
+---
+kind: KubeadmConfig
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha1
+metadata:
+  name: test-config
+spec:
+  clusterConfiguration:
+    certificatesDir: /etc/kubernetes/pki
+    controlPlaneEndpoint: "??unknown??"
+    dns:
+      type: ""
+    imageRepository: ""
+    kubernetesVersion: v1.14.2
+    networking:
+      dnsDomain: ""
+      podSubnet: ""
+      serviceSubnet: ""
+    etcd: {}
+---
+kind: Machine
+apiVersion: cluster.x-k8s.io/v1alpha2
+metadata:
+  name: my-machine
+  namespace: default
+  labels:
+    cluster.x-k8s.io/cluster-name: my-cluster
+    set: controlplane
+spec:
+  bootstrap:
+    configRef:
+      kind: KubeadmConfig
+      apiVersion: bootstrap.cluster.x-k8s.io/v1alpha1
+      namespace: default
+      name: test-config
+  infrastructureRef:
+    kind: DockerMachine
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    namespace: default
+    name: test-machine
+  version: "v1.14.2"
