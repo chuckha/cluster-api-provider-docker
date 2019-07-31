@@ -97,6 +97,10 @@ func (r *DockerMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 		return ctrl.Result{}, errors.New("machine has no associated cluster")
 	}
 
+	if machine.Spec.Bootstrap.Data == nil {
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
 	// Get the cluster
 	cluster := &capiv1alpha2.Cluster{}
 	clusterKey := client.ObjectKey{
