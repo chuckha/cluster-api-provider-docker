@@ -96,11 +96,6 @@ func (r *DockerMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	if machine.Labels[capiv1alpha2.MachineClusterLabelName] == "" {
 		return ctrl.Result{}, errors.New("machine has no associated cluster")
 	}
-
-	if machine.Spec.Bootstrap.Data == nil {
-		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
-	}
-
 	// Get the cluster
 	cluster := &capiv1alpha2.Cluster{}
 	clusterKey := client.ObjectKey{
@@ -110,6 +105,40 @@ func (r *DockerMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 	if err := r.Get(ctx, clusterKey, cluster); err != nil {
 		log.Error(err, "failed to get cluster")
 		return ctrl.Result{}, errors.WithStack(err)
+	}
+
+	if machine.Spec.Bootstrap.Data == nil {
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
+	// handle delete
+	if !dockerMachine.ObjectMeta.DeletionTimestamp.IsZero() {
+		// docker rm some shit
+		exists, err := r.Exists(dockerMachine, machine, cluster)
+		if err != nil {
+			log.Error(err, "unable to determine if docker infrastructure exists")
+			return ctrl.Result{}, err
+		}
+		if exists {
+			setValue := getRole(machine)
+			if setValue == clusterAPIControlPlaneSetLabel {
+				r.Log.Info("Deleting a control plane", "machine", machine.GetName())
+				if err := actions.DeleteControlPlane(cluster.Name, machine.GetName()); err != nil {
+					log.Error(err, "unable to delete control plane")
+					return ctrl.Result{}, err
+				}
+				log.Info("deleted control plane")
+				return ctrl.Result{}, nil
+			}
+			log.Info("Deleting a worker")
+			if err := actions.DeleteWorker(cluster.Name, machine.GetName()); err != nil {
+				log.Error(err, "failed to delete a worker")
+				return ctrl.Result{}, err
+			}
+			log.Info("Deleted a worker")
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, nil
 	}
 
 	// lookup to see if the cluster has been created
@@ -304,4 +333,34 @@ func kubeconfigToSecret(clusterName, namespace string) (*v1.Secret, error) {
 			"value": bytes.Join(lines, []byte("\n")),
 		},
 	}, nil
+}
+
+func (r *DockerMachineReconciler) Exists(dockermachine *infrastructurev1alpha1.DockerMachine, machine *capiv1alpha2.Machine, cluster *capiv1alpha2.Cluster) (bool, error) {
+	if dockermachine.Spec.ProviderID == nil {
+		return true, nil
+	}
+
+	role := getRole(machine)
+	kindRole := CAPIroleToKindRole(role)
+	labels := []string{
+		fmt.Sprintf("label=%s=%s", constants.NodeRoleKey, kindRole),
+		fmt.Sprintf("label=%s=%s", constants.ClusterLabelKey, cluster.Name),
+		fmt.Sprintf("name=^%s$", dockermachine.GetName()),
+	}
+	r.Log.Info("using labels", "labels", labels)
+	nodeList, err := nodes.List(labels...)
+	if err != nil {
+		return false, err
+	}
+	r.Log.Info("found nodes", "nodes", nodeList)
+	return len(nodeList) >= 1, nil
+}
+
+// CAPIroleToKindRole converts a CAPI role to kind role
+// TODO there is a better way to do this.
+func CAPIroleToKindRole(CAPIRole string) string {
+	if CAPIRole == clusterAPIControlPlaneSetLabel {
+		return constants.ControlPlaneNodeRoleValue
+	}
+	return CAPIRole
 }

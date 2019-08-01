@@ -85,25 +85,16 @@ func crdPathUsage(kind string) string {
 
 func (po *platformOptions) initFlags(fs *flag.FlagSet) {
 	fs.StringVar(&po.bootstrapRef, "bootstrap-provider-ref", "master", gitRefUsage("bootstrap"))
-	fs.StringVar(&po.bootstrapRef, "bp-ref", "master", gitRefUsage("bootstrap")+" (shorthand)")
 	fs.StringVar(&po.bootstrapImage, "bootstrap-provider-image", "", imageUsage("bootstrap"))
-	fs.StringVar(&po.bootstrapImage, "bp-image", "", imageUsage("bootstrap")+" (shorthand)")
 	fs.StringVar(&po.bootstrapCRDPath, "bootstrap-provider-crd-path", "remote", crdPathUsage("bootstrap"))
-	fs.StringVar(&po.bootstrapCRDPath, "bp-crd-path", "remote", crdPathUsage("bootstrap")+" (shorthand)")
 
 	fs.StringVar(&po.clusterAPIRef, "cluster-api-ref", "master", gitRefUsage("Cluster API"))
-	fs.StringVar(&po.clusterAPIRef, "capi-ref", "master", gitRefUsage("Cluster API")+" (shorthand)")
 	fs.StringVar(&po.clusterAPIImage, "cluster-api-image", "", imageUsage("Cluster API"))
-	fs.StringVar(&po.clusterAPIImage, "capi-image", "", imageUsage("Cluster API")+" (shorthand)")
 	fs.StringVar(&po.clusterAPICRDPath, "cluster-api-crd-path", "remote", crdPathUsage("Cluster API"))
-	fs.StringVar(&po.clusterAPICRDPath, "capi-crd-path", "remote", crdPathUsage("Cluster API")+" (shorthand)")
 
 	fs.StringVar(&po.infrastructureRef, "infrastructure-provider-ref", "master", gitRefUsage("infrastructure"))
-	fs.StringVar(&po.infrastructureRef, "ip-ref", "master", gitRefUsage("infrastructure")+" (shorthand)")
 	fs.StringVar(&po.infrastructureImage, "infrastructure-provider-image", "", imageUsage("infrastructure"))
-	fs.StringVar(&po.infrastructureImage, "ip-image", "", imageUsage("infrastructure")+" (shorthand)")
 	fs.StringVar(&po.infrastructureCRDPath, "infrastructure-provider-crd-path", "config/default", crdPathUsage("infrastructure"))
-	fs.StringVar(&po.infrastructureCRDPath, "ip-crd-path", "config/default", crdPathUsage("infrastructure")+" (shorthand)")
 }
 
 func addClusterName(fs *flag.FlagSet) *string {
@@ -285,6 +276,7 @@ func getProviderObjects(options *platformOptions) ([]runtime.Object, error) {
 			Name:         "cluster-api",
 			Organization: "kubernetes-sigs",
 			CRDPath:      options.clusterAPICRDPath,
+			Version:      options.clusterAPIRef,
 			ManagerKind:  "StatefulSet",
 			CustomImage:  options.clusterAPIImage,
 		},

@@ -13,9 +13,11 @@
 # limitations under the License.
 
 FROM golang:1.12.7
+ARG KUBECTL_VERSION=1.14.3
 WORKDIR /cluster-api-provider-docker
-RUN  curl -L https://dl.k8s.io/v1.14.3/kubernetes-client-linux-amd64.tar.gz | tar xvz
+RUN curl -L https://dl.k8s.io/v${KUBECTL_VERSION}/kubernetes-client-linux-amd64.tar.gz | tar xvz
 RUN curl https://get.docker.com | sh
+ENV GOPROXY=https://proxy.golang.org
 ADD go.mod .
 ADD go.sum .
 RUN go mod download
@@ -27,7 +29,6 @@ ADD kind kind
 ADD third_party third_party
 COPY third_party/forked/rerun-process-wrapper/start.sh /start.sh
 COPY third_party/forked/rerun-process-wrapper/restart.sh /restart.sh
-
 RUN go install -v ./cmd/manager
 RUN mv /go/bin/manager /manager
 ENTRYPOINT ["/start.sh", "/manager"]
