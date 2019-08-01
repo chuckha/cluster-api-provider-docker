@@ -113,7 +113,6 @@ func (r *DockerMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 
 	// handle delete
 	if !dockerMachine.ObjectMeta.DeletionTimestamp.IsZero() {
-		// docker rm some shit
 		exists, err := r.Exists(dockerMachine, machine, cluster)
 		if err != nil {
 			log.Error(err, "unable to determine if docker infrastructure exists")
@@ -176,7 +175,11 @@ func (r *DockerMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 				return ctrl.Result{}, err
 			}
 			providerID := actions.ProviderID(controlPlaneNode.Name())
-			machine.Spec.ProviderID = &providerID
+			dockerMachine.Spec.ProviderID = &providerID
+			if err := r.Update(ctx, dockerMachine); err != nil {
+				log.Error(err, "Error updating docker machine")
+				return ctrl.Result{}, err
+			}
 			return ctrl.Result{}, nil
 		}
 
@@ -198,7 +201,11 @@ func (r *DockerMachineReconciler) Reconcile(req ctrl.Request) (ctrl.Result, erro
 		}
 		// set the machine's providerID
 		providerID := actions.ProviderID(controlPlaneNode.Name())
-		machine.Spec.ProviderID = &providerID
+		dockerMachine.Spec.ProviderID = &providerID
+		if err := r.Update(ctx, dockerMachine); err != nil {
+			log.Error(err, "Error updating docker machine")
+			return ctrl.Result{}, err
+		}
 
 		s, err := kubeconfigToSecret(cluster.Name, cluster.Namespace)
 		if err != nil {
@@ -334,6 +341,8 @@ func kubeconfigToSecret(clusterName, namespace string) (*v1.Secret, error) {
 		},
 	}, nil
 }
+
+
 
 func (r *DockerMachineReconciler) Exists(dockermachine *infrastructurev1alpha1.DockerMachine, machine *capiv1alpha2.Machine, cluster *capiv1alpha2.Cluster) (bool, error) {
 	if dockermachine.Spec.ProviderID == nil {
