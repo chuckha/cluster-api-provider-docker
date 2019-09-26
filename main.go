@@ -72,11 +72,8 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "reconciler")
 		os.Exit(1)
 	}
-
-	if err = (&controllers.DockerClusterReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("DockerCluster"),
-	}).SetupWithManager(mgr); err != nil {
+	dcr := controllers.NewDockerClusterReconciler(mgr.GetClient(), ctrl.Log.WithName("controllers").WithName("DockerCluster"))
+	if err = dcr.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "DockerCluster")
 		os.Exit(1)
 	}

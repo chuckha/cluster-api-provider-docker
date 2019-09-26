@@ -1,8 +1,10 @@
 # Cluster API Provider Docker (CAPD)
 
-This project is a small part of the Cluster API project.
+## Infrastrucutre provider for testing/development
 
-This is one out of three components needed to run a Cluster API management cluster.
+This project is an infrastructure provider for the [Cluster API](https://github.com/kubernetes-sigs/cluster-api) project.
+
+It is incomplete by itself and requires the core provider (types + controller) and a bootstrap provider (types + controller).
 
 To get a complete overview, look at the documentation in the bootstrap provider that uses CAPD as an example infrastructure provider.
 
